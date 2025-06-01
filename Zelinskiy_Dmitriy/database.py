@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import random
 from typing import List, Dict, Optional
 
 DATA_FILE = "schedule_data.json"
@@ -18,8 +19,14 @@ COMMANDS = {
     "view": "Просмотреть расписание (день, неделя, месяц)",
     "edit": "Редактировать занятие",
     "delete": "Удалить занятие",
+    "random_fill": "Случайно заполнить расписание занятиями",
     "exit": "Выйти из программы"
 }
+
+# Возможные слоты времени для занятий
+TIME_SLOTS = [
+    "08:30", "10:00", "11:30", "13:00", "14:30", "16:00", "17:30"
+]
 
 def load_schedule() -> Dict[str, List[Dict]]:
     if os.path.exists(DATA_FILE):
@@ -282,6 +289,38 @@ def delete_lesson(schedule: Dict[str, List[Dict]]):
     else:
         print("Удаление отменено.")
 
+def fill_random_lessons(schedule: Dict[str, List[Dict]], num_days: int = 7, max_lessons_per_day: int = 3):
+    """
+    Заполняет расписание случайными занятиями на ближайшие num_days дней.
+    """
+    print(f"\nЗаполнение расписания случайными занятиями на ближайшие {num_days} дней...")
+    start_date = datetime.date.today()
+    for day_offset in range(num_days):
+        date = start_date + datetime.timedelta(days=day_offset)
+        date_str = date.isoformat()
+        lessons_count = random.randint(1, max_lessons_per_day)
+        used_times = set()
+        if date_str not in schedule:
+            schedule[date_str] = []
+        else:
+            # Чтобы не перезаписывать существующие занятия, добавим только новые, избегая конфликтов
+            used_times.update(lesson["time"] for lesson in schedule[date_str])
+        for _ in range(lessons_count):
+            # Выбираем время, которого ещё нет на этот день
+            available_times = [t for t in TIME_SLOTS if t not in used_times]
+            if not available_times:
+                break  # Нет свободных слотов времени
+            time = random.choice(available_times)
+            used_times.add(time)
+            subject = random.choice(SUBJECTS)
+            schedule[date_str].append({
+                "time": time,
+                "subject": subject
+            })
+        schedule[date_str].sort(key=lambda x: x["time"])
+    save_schedule(schedule)
+    print("Случайное заполнение завершено.")
+
 def main():
     schedule = load_schedule()
     print_welcome()
@@ -298,6 +337,8 @@ def main():
             edit_lesson(schedule)
         elif cmd == "delete":
             delete_lesson(schedule)
+        elif cmd == "random_fill":
+            fill_random_lessons(schedule)
         elif cmd == "exit":
             print("Выход из программы. До свидания!")
             break
