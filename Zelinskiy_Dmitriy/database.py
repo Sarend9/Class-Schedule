@@ -27,11 +27,11 @@ def generate_schedule_two_same_lessons_per_day_with_break(year, month):
         weekday_name = days_of_week[weekday_index]
         key = f"{date.strftime('%Y-%m-%d')} ({weekday_name})"
 
-        if weekday_index >5:  # будние дни
+        if weekday_index < 5:  # 0-4: будние дни
             subject = subjects[subject_index % len(subjects)]
             day_lessons = [
                 (lessons_times[0], subject),
-                ("19:30-19:40", "Перерыв"),
+                ("Перерыв", "19:30-19:40"),
                 (lessons_times[1], subject)
             ]
             schedule[key] = day_lessons
@@ -41,19 +41,29 @@ def generate_schedule_two_same_lessons_per_day_with_break(year, month):
 
     return schedule
 
-# Пример использования:
+
 year = 2025
 month = 6
 schedule = generate_schedule_two_same_lessons_per_day_with_break(year, month)
 
-for date_str, lessons in schedule.items():
-    print(f"{date_str}:")
-    if lessons == ["Занятий в этот день нет"]:
-        print(f"  {lessons[0]}")
+# Запрос дня у пользователя
+user_day = input("Введите день месяца (например, 18): ")
+try:
+    user_day_int = int(user_day)
+    date = datetime(year, month, user_day_int)
+    weekday_name = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье"][date.weekday()]
+    key = f"{date.strftime('%Y-%m-%d')} ({weekday_name})"
+    lessons = schedule.get(key)
+    if lessons is None:
+        print("Нет данных на этот день.")
+    elif lessons == ["Занятий в этот день нет"]:
+        print(f"{key}: {lessons[0]}")
     else:
+        print(f"{key}:")
         for time, subject in lessons:
             if time == "Перерыв":
-                print(f"  {time}")
+                print(f"  {subject} - {time}")
             else:
                 print(f"  {time} - {subject}")
-    print()
+except Exception as e:
+    print("Ошибка ввода. В этом месяце 30 дней.")
